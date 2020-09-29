@@ -1,5 +1,5 @@
 #FROM kalilinux/kali-linux-docker
-FROM w4sp/labs:base
+FROM 34334/labs:base
 
 #RUN apt-get -y update && apt-get -y upgrade
 

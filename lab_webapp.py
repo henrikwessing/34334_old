@@ -96,10 +96,10 @@ def launcher():
 
 @app.route('/getnet')
 def getnet():
-    print("Hvornår eksekveres denne linje")
+
     """This returns the nodes and edges used by visjs, node = { 'id': ns.pid, 'label': ns.name, 'title': ip_address }
         edges = { 'from': ns_connected_from, 'to': ns_connected_to }"""
-
+    print("NU ER VI I GETNET")
     data = {}
     data['nodes'] = []
     data['edges'] = []
@@ -125,7 +125,7 @@ def getnet():
     for ips in lab.ns_root.get_ips():
         tmp_popup += '%s : %s <br>' % ips.popitem()
 
-    data['nodes'].append({'id' : 1, 'label' : ' kali ', 'color' : 'rgb(204,0,0)', 'title' : tmp_popup})
+    data['nodes'].append({'id' : 1, 'label' : 'kali', 'color' : 'rgb(204,0,0)', 'title' : tmp_popup})
 
     for f,t in get_connections():
         tmp = {}
@@ -140,21 +140,19 @@ def getnet():
 
 @app.route('/runshark', methods=['POST', 'GET'])
 def runshark():
-    """this runs wireshark within the network namespace"""
-
-    error = None
-    if request.method == 'POST':
-        print('[*] POST IN RUNSHARK')
-        for key in request.form.keys():
-            if request.form[key] == '1':
-                w4sp.runshark('root')
-            for ns in NSROOT.ns:
-                if ns.pid == request.form[key]:
-                    print(ns.pid)
-                    print(ns.name)
-                    w4sp.runshark(ns.name)
-
-    return 'launched'
+   """this runs wireshark within the network namespace"""
+   error = None
+   if request.method == 'POST':
+       print('[*] POST IN RUNSHARK')
+       for key in request.form.keys():
+           if request.form[key] == '1':
+               lab.runshark('root')
+           for ns in NSROOT.ns:
+               if ns.pid == request.form[key]:
+                   print(ns.pid)
+                   print(ns.name)
+                   lab.runshark(ns.name)
+   return 'launched'
 
 
 @app.route('/setup')
@@ -165,7 +163,7 @@ def setup():
         return 'REFRESH'
 
     try:
-        w4sp.setup_network2('eth0')
+        lab.setup_network2('eth0')
         time.sleep(3)
         return 'REFRESH'
 
@@ -187,63 +185,58 @@ def mitm():
 
     for nic in netifaces.interfaces():
         if 'root' in nic:
-            w4sp.r('ip link set $nic down')
-            w4sp.r('ip link set $nic name vic3')
-            w4sp.r('ip link set vic3 up')
+            lab.r('ip link set $nic down')
+            lab.r('ip link set $nic name vic3')
+            lab.r('ip link set vic3 up')
 
     return 'ok'
 
 
 
-@app.route('/add_vic2')
-def add_vic():
-    """this connects up another victim to the '1st' net so we can do things like dhcp/DNS spoofing"""
-
-
-    if w4sp.c('vic2'):
-        return 'ERROR'
-
-    NSROOT.register_ns('vic2', 'w4sp/labs:victims')
-    w4sp.c('vic2').connect(w4sp.c('sw1'))
-    return 'ok'
-
-
+#@app.route('/add_vic2')
+#def add_vic():
+#    """this connects up another victim to the '1st' net so we can do things like dhcp/DNS spoofing"""##
+###   if w4sp.c('vic2'):
+  #      return 'ERROR'
+#    NSROOT.register_ns('vic2', 'w4sp/labs:victims')
+ #   w4sp.c('vic2').connect(w4sp.c('sw1'))
+ #   return 'ok'
 
 
 @app.route('/is_ips')
 def is_ips():
-    """quick check to see if suricata is running"""
+   """quick check to see if suricata is running"""
+
+   if psef(b'suricata'):
+      return 'ok',200
+   else:
+      return 'error',404
+
+
+
+@app.route('/ips')
+def ips():
+    """this starts suricata if it isn't running"""
 
     if psef(b'suricata'):
-        return 'ok',200
-    else:
         return 'error',404
 
+    #if sw2 isn't even up then we need to bail
+    if not lab.c('sw2'):
+        return 'error',404
 
+    #here I need to start up ELK, then suricata, then logstash
+    #check if ELK is running and if not start it
+    if not lab.c('elk'):
+        NSROOT.register_ns('elk', '34334/labs:elk')
+        #connect elk container to sw2 container
+        lab.c('elk').connect(lab.c('sw1'))
 
-# @app.route('/ips')
-# def ips():
-    # """this starts suricata if it isn't running"""
-
-    # if psef(b'suricata'):
-        # return 'error',404
-
-    # #if sw2 isn't even up then we need to bail
-    # if not lab.c('sw2'):
-        # return 'error',404
-
-    # #here I need to start up ELK, then suricata, then logstash
-    # #check if ELK is running and if not start it
-    # if not lab.c('elk'):
-        # NSROOT.register_ns('elk', 'w4sp/labs:elk')
-        # #connect elk container to sw2 container
-        # w4sp.c('elk').connect(w4sp.c('sw2'))
-
-    # #now start suricata on sw1
-    # w4sp.c('sw1').dexec('suricata -i br0')
-    # #also start up logstash
-    # w4sp.c('sw1').dexec('/opt/logstash/bin/logstash -f /etc/logstash/conf.d/logstash.conf')
-    # return 'ok'
+    #now start suricata on sw1
+    lab.c('sw1').dexec('suricata -i br0')
+    #also start up logstash
+    lab.c('sw1').dexec('/opt/logstash/bin/logstash -f /etc/logstash/conf.d/logstash.conf')
+    return 'ok'
 
 
 
@@ -262,8 +255,9 @@ def is_ips():
 
 
 
-# @app.route('/elk')
-# def elk():
+@app.route('/elk')
+def elk():
+    print("#### Kommer vi her ELK ###")
     # """this is just to start up ELK if we want to run it without the IPS"""
 
     # #if elk already exists, bail
@@ -274,7 +268,7 @@ def is_ips():
     # NSROOT.register_ns('elk', 'w4sp/labs:elk')
     # #connect elk container to sw2 container
     # w4sp.c('elk').connect(w4sp.c('sw2'))
-    # return 'ok'
+    return 'ok'
 
 
 # @app.route('/wifi')

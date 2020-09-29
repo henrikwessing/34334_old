@@ -1,5 +1,5 @@
 #build off of w4sp base image
-FROM w4sp/labs:base
+FROM 34334/labs:base
 
 RUN apt-get install -y vsftpd telnetd apache2
 

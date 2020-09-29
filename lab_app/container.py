@@ -1,4 +1,4 @@
-from w4sp_app.utils import r, docker_clean
+from lab_app.utils import r, docker_clean
 
 import subprocess
 import inspect

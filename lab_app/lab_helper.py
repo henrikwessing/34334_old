@@ -1,7 +1,7 @@
 import time
 import random
-from w4sp_app.container import *
-from w4sp_app.utils import *
+from lab_app.container import *
+from lab_app.utils import *
 
 from subprocess import call
 from multiprocessing import Process

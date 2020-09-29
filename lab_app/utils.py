@@ -95,18 +95,18 @@ def docker_build(image_path):
     #first we need to build the base image so we can build the rest
     r('docker build -t 34334/labs:base base')
 
-    for image in next(os.walk( os.path.join(curdir,'.')))[1]:
+#    for image in next(os.walk( os.path.join(curdir,'.')))[1]:
 
         #no point in rebuilding the base image
-        if image != 'base':
-            image_name = '34334/labs:' + image
-            r('docker build -t $image_name $image')
+    for image in ('victims','vrrpd','inet','switch'):
+        image_name = '34334/labs:' + image
+        r('docker build -t $image_name $image')
 
     #go back to the working dir
     os.chdir(orig_dir)
 
 def docker_clean():
-    """clean up our mess, this will remove all w4sp related containers
+    """clean up our mess, this will remove all 34334 related containers
     and will try to cleanup all of the network related stuff"""
 
 
@@ -115,7 +115,6 @@ def docker_clean():
 
     out = r('docker ps -aq --filter label=34334=true').split(b'\n')[:-1]
     print ("Docker Cleanup")
-    print (out)
     for c_id in out:
         r('docker rm -f $c_id')
 

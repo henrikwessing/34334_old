@@ -1,5 +1,5 @@
 #import from w4sp base
-FROM w4sp/labs:base
+FROM 34334/labs:base
 
 #install samba
 RUN apt-get install -y samba
