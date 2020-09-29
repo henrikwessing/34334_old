@@ -7,7 +7,7 @@ import time
 import json
 
 #docker handling code
-import w4sp
+import lab
 
 import argparse
 import netifaces
@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description='Wireshark for Security Professiona
 parser.add_argument('--debug', action='store_true', default=False)
 args = parser.parse_args()
 
-NSROOT = w4sp.ns_root
+NSROOT = lab.ns_root
 
 # import the Flask class from the flask module, try to install if we don't have it
 try:
@@ -40,19 +40,17 @@ except:
 app = Flask(__name__)
 app.config.from_object(__name__)
 
-print("NU er vi forbi try except og Flask kald")
-
 
 def get_connections():
     """this should return all of the machines that are connected"""
 
     tmp = []
 
-    for ns in w4sp.ns_root.ns:
+    for ns in lab.ns_root.ns:
         for nic in ns.nics:
             if 'root' in nic:
                 yield 1,ns.pid
-            for os in w4sp.ns_root.ns:
+            for os in lab.ns_root.ns:
                 if os != ns and nic in os.nics and nic not in tmp:
                     tmp.append(nic)
                     print('%s connected %s' % (ns.pid,os.pid))
@@ -106,7 +104,7 @@ def getnet():
     data['nodes'] = []
     data['edges'] = []
 
-    for ns in w4sp.ns_root.ns:
+    for ns in lab.ns_root.ns:
         tmp = {}
         tmp['id'] = ns.pid
         tmp['label'] = ns.name
@@ -124,7 +122,7 @@ def getnet():
 
     tmp_popup = ''
     #now add the root ns
-    for ips in w4sp.ns_root.get_ips():
+    for ips in lab.ns_root.get_ips():
         tmp_popup += '%s : %s <br>' % ips.popitem()
 
     data['nodes'].append({'id' : 1, 'label' : ' kali ', 'color' : 'rgb(204,0,0)', 'title' : tmp_popup})
@@ -181,7 +179,7 @@ def mitm():
     """this connects vic3 to the root ns so we can mitm it"""
 
     #should add a check to see if vic3 already exists
-    if w4sp.c('vic3'):
+    if lab.c('vic3'):
         return 'ERROR'
 
     NSROOT.register_ns('vic3', 'w4sp/labs:victims')
@@ -223,185 +221,185 @@ def is_ips():
 
 
 
-@app.route('/ips')
-def ips():
-    """this starts suricata if it isn't running"""
+# @app.route('/ips')
+# def ips():
+    # """this starts suricata if it isn't running"""
 
-    if psef(b'suricata'):
-        return 'error',404
+    # if psef(b'suricata'):
+        # return 'error',404
 
-    #if sw2 isn't even up then we need to bail
-    if not w4sp.c('sw2'):
-        return 'error',404
+    # #if sw2 isn't even up then we need to bail
+    # if not lab.c('sw2'):
+        # return 'error',404
 
-    #here I need to start up ELK, then suricata, then logstash
-    #check if ELK is running and if not start it
-    if not w4sp.c('elk'):
-        NSROOT.register_ns('elk', 'w4sp/labs:elk')
-        #connect elk container to sw2 container
-        w4sp.c('elk').connect(w4sp.c('sw2'))
+    # #here I need to start up ELK, then suricata, then logstash
+    # #check if ELK is running and if not start it
+    # if not lab.c('elk'):
+        # NSROOT.register_ns('elk', 'w4sp/labs:elk')
+        # #connect elk container to sw2 container
+        # w4sp.c('elk').connect(w4sp.c('sw2'))
 
-    #now start suricata on sw1
-    w4sp.c('sw1').dexec('suricata -i br0')
-    #also start up logstash
-    w4sp.c('sw1').dexec('/opt/logstash/bin/logstash -f /etc/logstash/conf.d/logstash.conf')
-    return 'ok'
-
-
-
-@app.route('/sploit')
-def sploit():
-    """this starts up and connects the sploitable instance"""
-
-    #if sploit is already created, just bail
-    if w4sp.c('sploit'):
-        return 'error', 404
-
-    #create the sploitable container and connect to sw2
-    NSROOT.register_ns('sploit', 'w4sp/labs:sploitable')
-    w4sp.c('sploit').connect(w4sp.c('sw2'))
-    return 'ok'
+    # #now start suricata on sw1
+    # w4sp.c('sw1').dexec('suricata -i br0')
+    # #also start up logstash
+    # w4sp.c('sw1').dexec('/opt/logstash/bin/logstash -f /etc/logstash/conf.d/logstash.conf')
+    # return 'ok'
 
 
 
-@app.route('/elk')
-def elk():
-    """this is just to start up ELK if we want to run it without the IPS"""
+# @app.route('/sploit')
+# def sploit():
+    # """this starts up and connects the sploitable instance"""
 
-    #if elk already exists, bail
-    if w4sp.c('elk'):
-        return 'error',404
+    # #if sploit is already created, just bail
+    # if w4sp.c('sploit'):
+        # return 'error', 404
 
-    #other create and connect up elk
-    NSROOT.register_ns('elk', 'w4sp/labs:elk')
-    #connect elk container to sw2 container
-    w4sp.c('elk').connect(w4sp.c('sw2'))
-    return 'ok'
-
-
-@app.route('/wifi')
-def wifi():
-    """this sets up and configures the wireless docker
-        we are going to explicitly ignore the iw help and
-        screenscrape the output to get our interface names
-        this function is going to make a lot of assumptions
-        thar be dragons"""
-
-    #check if the wifi docker is already running
-    if w4sp.c('wifi'):
-        #if it check if the cleartext hostapd is running
-        if psef('hostapd_clear'):
-            return 'wifi already running', 404
-
-        #if hostapd isn't running lets start it
-        else:
-            w4sp.c('wifi').dexec('hostapd /hostapd_clear.conf')
-            return 'ok1'
-
-    #count of interfaces discovered and var for nic name
-    count = 0
-    phy = False
-
-    #our regex to find phy%d
-    match = re.compile('phy\d')
-
-    #get iw output
-    iwo = subprocess.check_output(['iw', 'list'])
-
-    for line in iwo.split():
-        #find they phy interface number
-        if match.search(line):
-            count += 1
-            phy = line.strip()
-
-
-    #check that we got one and only one phy
-    if count >= 2:
-        return 'got more than one phy interface, remove one wireless device', 500
-
-    if not phy:
-        return 'didn''t find a valid phy, please check wifi device connection', 500
-
-    #we get here we should have a valid phy name
-    #we are going to spin up the wireless container
-    NSROOT.register_ns('wifi', 'w4sp/labs:wireless')
-    #connect wifi container to sw2
-    w4sp.c('wifi').connect(w4sp.c('sw2'))
-
-    #no we need to move our wifi nic into the container
-    cmd = 'iw phy %s set netns %s' % (phy, w4sp.c('wifi').pid)
-
-    try:
-        subprocess.call(cmd.split(' '))
-        #ugh, delaying so setup_wifi.py can catch the new interface :/
-        time.sleep(0.01)
-        w4sp.c('wifi').dexec('hostapd /hostapd_clear.conf')
-        return 'ok'
-
-    except:
-        return 'error moving wireless device to container', 500
+    # #create the sploitable container and connect to sw2
+    # NSROOT.register_ns('sploit', 'w4sp/labs:sploitable')
+    # w4sp.c('sploit').connect(w4sp.c('sw2'))
+    # return 'ok'
 
 
 
-@app.route('/wpa2')
-def wpa2():
-    """this sets up and configures the wireless docker
-        we are going to explicitly ignore the iw help and
-        screenscrape the output to get our interface names
-        this function is going to make a lot of assumptions
-        thar be dragons"""
+# @app.route('/elk')
+# def elk():
+    # """this is just to start up ELK if we want to run it without the IPS"""
 
-    #check if the wifi docker is already running
-    if w4sp.c('wifi'):
-        #if it check if the cleartext hostapd is running
-        if psef('hostapd_wpa2'):
-            return 'wifi already running', 404
+    # #if elk already exists, bail
+    # if w4sp.c('elk'):
+        # return 'error',404
 
-        #if hostapd isn't running lets start it
-        else:
-            w4sp.c('wifi').dexec('hostapd /hostapd_wpa2.conf')
-            return 'ok1'
-
-    #count of interfaces discovered and var for nic name
-    count = 0
-    phy = False
-
-    #our regex to find phy%d
-    match = re.compile('phy\d')
-
-    #get iw output
-    iwo = subprocess.check_output(['iw', 'list'])
-
-    for line in iwo.split():
-        #find they phy interface number
-        if match.search(line):
-            count += 1
-            phy = line.strip()
+    # #other create and connect up elk
+    # NSROOT.register_ns('elk', 'w4sp/labs:elk')
+    # #connect elk container to sw2 container
+    # w4sp.c('elk').connect(w4sp.c('sw2'))
+    # return 'ok'
 
 
-    #check that we got one and only one phy
-    if count >= 2:
-        return 'got more than one phy interface, remove one wireless device', 500
+# @app.route('/wifi')
+# def wifi():
+    # """this sets up and configures the wireless docker
+        # we are going to explicitly ignore the iw help and
+        # screenscrape the output to get our interface names
+        # this function is going to make a lot of assumptions
+        # thar be dragons"""
 
-    if not phy:
-        return 'didn''t find a valid phy, please check wifi device connection', 500
+    # #check if the wifi docker is already running
+    # if w4sp.c('wifi'):
+        # #if it check if the cleartext hostapd is running
+        # if psef('hostapd_clear'):
+            # return 'wifi already running', 404
 
-    #we get here we should have a valid phy name
-    #we are going to spin up the wireless container
-    NSROOT.register_ns('wifi', 'w4sp/labs:wireless')
-    #connect wifi container to sw2
-    w4sp.c('wifi').connect(w4sp.c('sw2'))
+        # #if hostapd isn't running lets start it
+        # else:
+            # w4sp.c('wifi').dexec('hostapd /hostapd_clear.conf')
+            # return 'ok1'
 
-    #no we need to move our wifi nic into the container
-    cmd = 'iw phy %s set netns %s' % (phy, w4sp.c('wifi').pid)
+    # #count of interfaces discovered and var for nic name
+    # count = 0
+    # phy = False
 
-    try:
-        subprocess.call(cmd.split(' '))
-        w4sp.c('wifi').dexec('hostapd /hostapd_wpa2.conf')
-        return 'ok'
+    # #our regex to find phy%d
+    # match = re.compile('phy\d')
 
-    except:
-        return 'error moving wireless device to container', 500
+    # #get iw output
+    # iwo = subprocess.check_output(['iw', 'list'])
+
+    # for line in iwo.split():
+        # #find they phy interface number
+        # if match.search(line):
+            # count += 1
+            # phy = line.strip()
+
+
+    # #check that we got one and only one phy
+    # if count >= 2:
+        # return 'got more than one phy interface, remove one wireless device', 500
+
+    # if not phy:
+        # return 'didn''t find a valid phy, please check wifi device connection', 500
+
+    # #we get here we should have a valid phy name
+    # #we are going to spin up the wireless container
+    # NSROOT.register_ns('wifi', 'w4sp/labs:wireless')
+    # #connect wifi container to sw2
+    # w4sp.c('wifi').connect(w4sp.c('sw2'))
+
+    # #no we need to move our wifi nic into the container
+    # cmd = 'iw phy %s set netns %s' % (phy, w4sp.c('wifi').pid)
+
+    # try:
+        # subprocess.call(cmd.split(' '))
+        # #ugh, delaying so setup_wifi.py can catch the new interface :/
+        # time.sleep(0.01)
+        # w4sp.c('wifi').dexec('hostapd /hostapd_clear.conf')
+        # return 'ok'
+
+    # except:
+        # return 'error moving wireless device to container', 500
+
+
+
+# @app.route('/wpa2')
+# def wpa2():
+    # """this sets up and configures the wireless docker
+        # we are going to explicitly ignore the iw help and
+        # screenscrape the output to get our interface names
+        # this function is going to make a lot of assumptions
+        # thar be dragons"""
+
+    # #check if the wifi docker is already running
+    # if w4sp.c('wifi'):
+        # #if it check if the cleartext hostapd is running
+        # if psef('hostapd_wpa2'):
+            # return 'wifi already running', 404
+
+        # #if hostapd isn't running lets start it
+        # else:
+            # w4sp.c('wifi').dexec('hostapd /hostapd_wpa2.conf')
+            # return 'ok1'
+
+    # #count of interfaces discovered and var for nic name
+    # count = 0
+    # phy = False
+
+    # #our regex to find phy%d
+    # match = re.compile('phy\d')
+
+    # #get iw output
+    # iwo = subprocess.check_output(['iw', 'list'])
+
+    # for line in iwo.split():
+        # #find they phy interface number
+        # if match.search(line):
+            # count += 1
+            # phy = line.strip()
+
+
+    # #check that we got one and only one phy
+    # if count >= 2:
+        # return 'got more than one phy interface, remove one wireless device', 500
+
+    # if not phy:
+        # return 'didn''t find a valid phy, please check wifi device connection', 500
+
+    # #we get here we should have a valid phy name
+    # #we are going to spin up the wireless container
+    # NSROOT.register_ns('wifi', 'w4sp/labs:wireless')
+    # #connect wifi container to sw2
+    # w4sp.c('wifi').connect(w4sp.c('sw2'))
+
+    # #no we need to move our wifi nic into the container
+    # cmd = 'iw phy %s set netns %s' % (phy, w4sp.c('wifi').pid)
+
+    # try:
+        # subprocess.call(cmd.split(' '))
+        # w4sp.c('wifi').dexec('hostapd /hostapd_wpa2.conf')
+        # return 'ok'
+
+    # except:
+        # return 'error moving wireless device to container', 500
 
 
 
@@ -409,7 +407,7 @@ def wpa2():
 def shutdown():
     """cleans up mess"""
 
-    w4sp.ns_root.shutdown()
+    lab.ns_root.shutdown()
     time.sleep(3)
     return ''
 
@@ -433,9 +431,9 @@ if __name__ == '__main__':
     except KeyError:
         print('[*] w4sp-lab user non-existant, creating')
         try:
-            w4sp.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo,wireshark -U')
+            lab.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo,wireshark -U')
         except:
-            w4sp.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo -U')  
+            lab.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo -U')  
         print("[*] Please run: 'passwd w4sp-lab' to set your password, then login as w4sp-lab and rerun lab")
         sys.exit(-1)
 
@@ -446,7 +444,7 @@ if __name__ == '__main__':
 
 
     #check dumpcap
-    w4sp.check_dumpcap()
+    lab.check_dumpcap()
 
 
     #see if we can run docker
@@ -496,15 +494,15 @@ if __name__ == '__main__':
     try:
         tmp_n = 0
         for image in images:
-            if b'34334/labs' in image:
+            if b'34334' in image:
                 tmp_n += 1
         #basic check to see if we have at least six w4sp named images
         if tmp_n > len(os.listdir('images')):
-            print('[*] 34334/labs images available')
+            print('[*] 34334 images available')
 
         else:
-            print('[*] Not enough 34334/labs images found, building now')
-            w4sp.docker_build('images/')
+            print('[*] Not enough 34334 images found, building now')
+            lab.docker_build('images/')
 
     except:
         #just a placeholder
@@ -525,7 +523,7 @@ if __name__ == '__main__':
     subprocess.call(['iptables', '-X'])
 
 
-    w4sp.docker_clean()
+    lab.docker_clean()
 
 
     app.config['DEBUG'] = args.debug
