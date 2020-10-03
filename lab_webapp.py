@@ -425,10 +425,10 @@ if __name__ == '__main__':
     except KeyError:
         print('[*] w4sp-lab user non-existant, creating')
         try:
-            lab.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo,wireshark -U')
+            lab.utils.r('useradd -m cybertek -s /bin/bash -G sudo,wireshark -U')
         except:
             lab.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo -U')  
-        print("[*] Please run: 'passwd w4sp-lab' to set your password, then login as w4sp-lab and rerun lab")
+        print("[*] Please run: 'passwd cybertek' to set your password, then login as w4sp-lab and rerun lab")
         sys.exit(-1)
 
     #check to see if we logged in as w4sp-lab
@@ -472,7 +472,7 @@ if __name__ == '__main__':
                     #add the stretch repo, need to figure out how to map kali versions
                     #to debian versions
 
-                    f.write('\ndeb https://apt.dockerproject.org/repo/ debian-stretch main\n')
+                    #f.write('\ndeb https://apt.dockerproject.org/repo/ debian-stretch main\n')
 
             subprocess.call(['apt-get', 'update'])
             subprocess.call(['apt-get', '-y', 'install', 'docker.io'])
