@@ -36,45 +36,44 @@ def setup_network2(h_if):
     finally:
         docker_clean()
 
-   # net_1 = {'subnet' : '192.100.200.0/24',
-   #             'hubs' : [
-   #                 {'switch' : ['sw1'],
-   #                     'clients' : [
-   #                         {'vrrpd' : ['r1', 'r2']},
-   #                         {'victims' : ['vic1',]}
-   #                     ]
-   #                 }
-   #             ]
-   #         }
-
-    net_2 = {'subnet' : '10.100.200.0/24',
+    net_1 = {'subnet' : '192.168.100.0/24',
                 'hubs' : [
                     {'switch' : ['sw1'],
                         'clients' : [
-                            {'vrrpd' : ['r1', 'r2']},
+                            {'vrrpd' : ['firewall']},
+                            {'victims' : ['server1']}
+                        ]
+                    }
+                ]
+            }
+
+    net_2 = {'subnet' : '10.100.200.0/24',
+                'hubs' : [
+                    {'switch' : ['sw2'],
+                        'clients' : [
+                            {'vrrpd' : ['firewall']},
                             {'inet' : ['inet']},
-                            {'victims' : ['vic1','vic2']}
+                            {'victims' : ['server1']}
                         ]
                     }
                 ]
             }
 
 
-    #create_netx(net_1)
+    create_netx(net_1)
     create_netx(net_2)
 
     #we are going to assume we are only dealing with one hub
     #yes....this is gross, maybe make a convenience function
     #this gets 'sw1' for example in net_1
-    sw1 = [net_2['hubs'][0][x] for x in net_2['hubs'][0].keys() if x != 'clients'][0][0]
-    print ("--- Printing sw1 ----")
- 
-    #w2 = [net_2['hubs'][0][x] for x in net_2['hubs'][0].keys() if x != 'clients'][0][0]
+    sw1 = [net_1['hubs'][0][x] for x in net_2['hubs'][0].keys() if x != 'clients'][0][0]
+
+    sw2 = [net_2['hubs'][0][x] for x in net_2['hubs'][0].keys() if x != 'clients'][0][0]
 
     #here we fixup dns by adding the other dns servers ip to /etc/resolv.conf
-    for dns in ['sw1']:#sw2):
-     ##   for dns2 in (sw1): #(sw1,sw2):
-       ##     if dns != dns2:
+    for dns in ['sw1', 'sw2']:
+        for dns2 in (sw1): #(sw1,sw2):
+            if dns != dns2:
                 #should only have one ip.....
                 print (dns + "  " + str(c(dns))) 
                 nic,ip = next(c(dns).get_ips()).popitem()
@@ -114,8 +113,7 @@ def setup_network2(h_if):
      
     #add the routes to the other network
     #hardcoding since I am lazy
-  #  other_net = net_1['subnet'].strip('/24')
-    other_net = ''
+    other_net = net_1['subnet'].strip('/24')
     other_gw = net_2['subnet'].strip('0/24') + '1'
 
     dfgw_set = False

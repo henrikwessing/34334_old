@@ -11,21 +11,28 @@ def runshark(name):
     """runs wireshark in the network namespace of a container by name"""
 
     if name == 'root':
-        p1 = Process(target=r, args=('su - w4sp-lab -c wireshark',))
+        p1 = Process(target=r, args=('su - cybertek -c wireshark',))
         p2 = Process(target=r, args=(['xterm', '-fn', '10x20', '-fa', 'Liberation Mono:size=12:antialias=true', '-xrm', 'XTerm.vt100.allowTitleOps: false', '-T', name],))
         p1.start()
         p2.start()
         return 
 
-    #start wireshark in a different process
-    wireshark = 'ip netns exec %s su - w4sp-lab -c wireshark' % name
-    p = Process(target=r, args=(wireshark,))
+    # Modified - start a bash in given namespace
+    bash = 'ip netns exec %s /bin/bash' %name
+    print("--EXEC COMMAND--" + bash)
+    p = Process(target=r, args=(bash,))
     p.start()
 
+
+    #start wireshark in a different process
+#    wireshark = 'ip netns exec %s su - cybertek -c /bin/bash' % name
+#    p = Process(target=r, args=(wireshark,))
+#    p.start()
+
     #start terminal in another process
-    terminal = ['ip', 'netns', 'exec', name, 'xterm', '-fn', '10x20', '-fa', 'Liberation Mono:size=12:antialias=true', '-xrm', 'XTerm.vt100.allowTitleOps: false', '-T', name]
-    p = Process(target=call, args=(terminal,))
-    p.start()
+ #   terminal = ['ip', 'netns', 'exec', name, 'xterm', '-fn', '10x20', '-fa', 'Liberation Mono:size=12:antialias=true', '-xrm', 'XTerm.vt100.allowTitleOps: false', '-T', name]
+ #   p = Process(target=call, args=(terminal,))
+ #   p.start()
 
 
 
