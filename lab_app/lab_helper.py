@@ -271,6 +271,7 @@ def create_netx(net):
         
         #setup_sw(sw, subnet, sw_clients)
         for client in sw_clients:
+            print('--- Connecting clients ---' + sw + '   ' + client) 
             c(sw).connect(c(client))
 
         #we are now going to assign a random ip address to the br0 (dhcp server)
@@ -291,44 +292,56 @@ def create_netx(net):
         sw = ''
         sw_clients = []
 
-def create_netr(net):
+def connect_router(first, second, net):
+    routerA = 'router'+str(first)
+    routerB = 'router'+str(second)
+    interfaceA = routerA+'_'+str(second)
+    interfaceB = routerB+'_'+str(first)
+    base = '.'.join(net.split('.')[:-1])
+    ipA = base+'.'+'1/24'
+    ipB = base+'.'+'2/24'
+    c(routerA).connect(c(routerB))
+    c(routerA).enter_ns()
+    print('Setting intefaces on ' + routerA)
+    r('ip link add '+ interfaceA+' type veth peer name '+interfaceB)
+    r('ip link set '+ interfaceB+' netns '+routerB)
+    r('ip addr add '+ipA+' dev '+interfaceA)
+    c(routerA).exit_ns()
+    print('Setting intefaces on ' + routerB)
+    c(routerB).enter_ns()
+    r('ip addr add '+ipB+' dev '+interfaceB)
+    c(routerB).exit_ns()
+
+
+def create_netr():
     """connect routers and swicthes"""
-    print("Creating netx")
+    print("Creating network between routers")
 
-    subnet = net['subnet']
     image = '34334/labs:%s'
-    sw = ''
-    sw_clients = []
 
-    #lets create all containers
+    #lets create all router containers
+    tag = 'vrrpd'
+    d_image = image % tag
+    for i in range(4):
+      name = 'router' + str(i+1)
+      print('Creating ' + name)
+      if not c(name):
+        ns_root.register_ns(name, d_image)
 
-    for node in net['nodes']:
-        for tag in node.keys():
-            print("Tag found: " + str(tag))
-		#if tag != 'clients':
-                #for name in hub[tag]:
-                #    d_image = image % tag
-                #    print(d_image)
-                #    sw = name
-                #    #if container doesn't already exist create it
-                #    if not c(name):
-                #        print(net)
-                #        ns_root.register_ns(name, d_image)
-            #else:
-             #   for clients in hub[tag]:
-             #       for tag in clients.keys():
-              #          for name in clients[tag]:
-              #              d_image = image % tag
-              #              print(d_image)
-                            #print c, tag
-               #             sw_clients.append(name)
-                #            if not c(name):
-                 #               ns_root.register_ns(name, d_image)
+    connect_router(1,2,'192.168.1.0')
+    connect_router(2,3,'192.168.2.0')
+    connect_router(3,4,'192.168.3.0')
+    connect_router(4,1,'192.168.4.0')
 
-        
-        #setup_sw(sw, subnet, sw_clients)
-        #for client in sw_clients:
-        #    c(sw).connect(c(client))
+    tag = 'inet'
+    d_image = image % tag
+    if not c('inet'):
+      ns_root.register_ns('inet', d_image)
+
+    
+ 
+
+
 
         #we are now going to assign a random ip address to the br0 (dhcp server)
         # base = '.'.join(subnet.split('.')[:-1])

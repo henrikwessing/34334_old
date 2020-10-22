@@ -284,7 +284,7 @@ if __name__ == '__main__':
         for image in images:
             if b'34334' in image:
                 tmp_n += 1
-        #basic check to see if we have at least six w4sp named images
+        #Check that all needed images have been created
         if tmp_n > len(os.listdir('images')):
             print('[*] 34334 images available')
 

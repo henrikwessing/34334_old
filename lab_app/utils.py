@@ -111,11 +111,15 @@ def docker_clean():
     and will try to cleanup all of the network related stuff"""
 
 
-    #docker rm -f $(docker ps -aq --filter 'label=34334=true')
-    #r('service docker restart')
+    try: 
+      r('systemctl restart docker')
+    except: 
+      r('systemctl stop docker')
+      r('systemctl start docker')
 
     out = r('docker ps -aq').split(b'\n')[:-1]
     print ("Docker Cleanup")
+    print (out)
     for c_id in out:
         r('docker rm -f $c_id')
 
@@ -149,13 +153,13 @@ def docker_clean():
 
     r('service NetworkManager start')
     r('service networking restart')
-    r('service docker status')
-    try: 
-        r('systemctl restart docker')
-    except:
-        time.sleep(10)
-        r('systemctl restart docker')
-    print("Now docker should be restarted")
+  #  r('service docker status')
+  #  try: 
+  #      r('systemctl restart docker')
+   # except:
+   #     time.sleep(10)
+   #     r('systemctl restart docker')
+   # print("Now docker should be restarted")
 
 
 
