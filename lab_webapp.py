@@ -155,15 +155,31 @@ def runshark():
    return 'launched'
 
 
-@app.route('/setup')
-def setup():
-    """start the network"""
+@app.route('/setupfirewall')
+def setupfw():
+    """start the firewall network"""
 
     if len(NSROOT.ns) >= 1:
         return 'REFRESH'
 
     try:
-        lab.setup_network2('eth0')
+        lab.setup_network_firewall('eth0')
+        time.sleep(3)
+        return 'REFRESH'
+
+    except:
+        print(traceback.format_exc())
+        return 'ERROR'
+
+@app.route('/setuprouting')
+def setuprouting():
+    """start the routing network"""
+
+    if len(NSROOT.ns) >= 1:
+        return 'REFRESH'
+
+    try:
+        lab.setup_network_routing('eth0')
         time.sleep(3)
         return 'REFRESH'
 
@@ -172,228 +188,6 @@ def setup():
         return 'ERROR'
 
 
-@app.route('/mitm')
-def mitm():
-    """this connects vic3 to the root ns so we can mitm it"""
-
-    #should add a check to see if vic3 already exists
-    if lab.c('vic3'):
-        return 'ERROR'
-
-    NSROOT.register_ns('vic3', 'w4sp/labs:victims')
-    w4sp.c('vic3').connect(w4sp.ns_root)
-
-    for nic in netifaces.interfaces():
-        if 'root' in nic:
-            lab.r('ip link set $nic down')
-            lab.r('ip link set $nic name vic3')
-            lab.r('ip link set vic3 up')
-
-    return 'ok'
-
-
-
-#@app.route('/add_vic2')
-#def add_vic():
-#    """this connects up another victim to the '1st' net so we can do things like dhcp/DNS spoofing"""##
-###   if w4sp.c('vic2'):
-  #      return 'ERROR'
-#    NSROOT.register_ns('vic2', 'w4sp/labs:victims')
- #   w4sp.c('vic2').connect(w4sp.c('sw1'))
- #   return 'ok'
-
-
-@app.route('/is_ips')
-def is_ips():
-   """quick check to see if suricata is running"""
-
-   if psef(b'suricata'):
-      return 'ok',200
-   else:
-      return 'error',404
-
-
-
-@app.route('/ips')
-def ips():
-    """this starts suricata if it isn't running"""
-
-    if psef(b'suricata'):
-        return 'error',404
-
-    #if sw2 isn't even up then we need to bail
-    if not lab.c('sw2'):
-        return 'error',404
-
-    #here I need to start up ELK, then suricata, then logstash
-    #check if ELK is running and if not start it
-    if not lab.c('elk'):
-        NSROOT.register_ns('elk', '34334/labs:elk')
-        #connect elk container to sw2 container
-        lab.c('elk').connect(lab.c('sw1'))
-
-    #now start suricata on sw1
-    lab.c('sw1').dexec('suricata -i br0')
-    #also start up logstash
-    lab.c('sw1').dexec('/opt/logstash/bin/logstash -f /etc/logstash/conf.d/logstash.conf')
-    return 'ok'
-
-
-
-# @app.route('/sploit')
-# def sploit():
-    # """this starts up and connects the sploitable instance"""
-
-    # #if sploit is already created, just bail
-    # if w4sp.c('sploit'):
-        # return 'error', 404
-
-    # #create the sploitable container and connect to sw2
-    # NSROOT.register_ns('sploit', 'w4sp/labs:sploitable')
-    # w4sp.c('sploit').connect(w4sp.c('sw2'))
-    # return 'ok'
-
-
-
-@app.route('/elk')
-def elk():
-    print("#### Kommer vi her ELK ###")
-    # """this is just to start up ELK if we want to run it without the IPS"""
-
-    # #if elk already exists, bail
-    # if w4sp.c('elk'):
-        # return 'error',404
-
-    # #other create and connect up elk
-    # NSROOT.register_ns('elk', 'w4sp/labs:elk')
-    # #connect elk container to sw2 container
-    # w4sp.c('elk').connect(w4sp.c('sw2'))
-    return 'ok'
-
-
-# @app.route('/wifi')
-# def wifi():
-    # """this sets up and configures the wireless docker
-        # we are going to explicitly ignore the iw help and
-        # screenscrape the output to get our interface names
-        # this function is going to make a lot of assumptions
-        # thar be dragons"""
-
-    # #check if the wifi docker is already running
-    # if w4sp.c('wifi'):
-        # #if it check if the cleartext hostapd is running
-        # if psef('hostapd_clear'):
-            # return 'wifi already running', 404
-
-        # #if hostapd isn't running lets start it
-        # else:
-            # w4sp.c('wifi').dexec('hostapd /hostapd_clear.conf')
-            # return 'ok1'
-
-    # #count of interfaces discovered and var for nic name
-    # count = 0
-    # phy = False
-
-    # #our regex to find phy%d
-    # match = re.compile('phy\d')
-
-    # #get iw output
-    # iwo = subprocess.check_output(['iw', 'list'])
-
-    # for line in iwo.split():
-        # #find they phy interface number
-        # if match.search(line):
-            # count += 1
-            # phy = line.strip()
-
-
-    # #check that we got one and only one phy
-    # if count >= 2:
-        # return 'got more than one phy interface, remove one wireless device', 500
-
-    # if not phy:
-        # return 'didn''t find a valid phy, please check wifi device connection', 500
-
-    # #we get here we should have a valid phy name
-    # #we are going to spin up the wireless container
-    # NSROOT.register_ns('wifi', 'w4sp/labs:wireless')
-    # #connect wifi container to sw2
-    # w4sp.c('wifi').connect(w4sp.c('sw2'))
-
-    # #no we need to move our wifi nic into the container
-    # cmd = 'iw phy %s set netns %s' % (phy, w4sp.c('wifi').pid)
-
-    # try:
-        # subprocess.call(cmd.split(' '))
-        # #ugh, delaying so setup_wifi.py can catch the new interface :/
-        # time.sleep(0.01)
-        # w4sp.c('wifi').dexec('hostapd /hostapd_clear.conf')
-        # return 'ok'
-
-    # except:
-        # return 'error moving wireless device to container', 500
-
-
-
-# @app.route('/wpa2')
-# def wpa2():
-    # """this sets up and configures the wireless docker
-        # we are going to explicitly ignore the iw help and
-        # screenscrape the output to get our interface names
-        # this function is going to make a lot of assumptions
-        # thar be dragons"""
-
-    # #check if the wifi docker is already running
-    # if w4sp.c('wifi'):
-        # #if it check if the cleartext hostapd is running
-        # if psef('hostapd_wpa2'):
-            # return 'wifi already running', 404
-
-        # #if hostapd isn't running lets start it
-        # else:
-            # w4sp.c('wifi').dexec('hostapd /hostapd_wpa2.conf')
-            # return 'ok1'
-
-    # #count of interfaces discovered and var for nic name
-    # count = 0
-    # phy = False
-
-    # #our regex to find phy%d
-    # match = re.compile('phy\d')
-
-    # #get iw output
-    # iwo = subprocess.check_output(['iw', 'list'])
-
-    # for line in iwo.split():
-        # #find they phy interface number
-        # if match.search(line):
-            # count += 1
-            # phy = line.strip()
-
-
-    # #check that we got one and only one phy
-    # if count >= 2:
-        # return 'got more than one phy interface, remove one wireless device', 500
-
-    # if not phy:
-        # return 'didn''t find a valid phy, please check wifi device connection', 500
-
-    # #we get here we should have a valid phy name
-    # #we are going to spin up the wireless container
-    # NSROOT.register_ns('wifi', 'w4sp/labs:wireless')
-    # #connect wifi container to sw2
-    # w4sp.c('wifi').connect(w4sp.c('sw2'))
-
-    # #no we need to move our wifi nic into the container
-    # cmd = 'iw phy %s set netns %s' % (phy, w4sp.c('wifi').pid)
-
-    # try:
-        # subprocess.call(cmd.split(' '))
-        # w4sp.c('wifi').dexec('hostapd /hostapd_wpa2.conf')
-        # return 'ok'
-
-    # except:
-        # return 'error moving wireless device to container', 500
 
 
 
@@ -427,7 +221,7 @@ if __name__ == '__main__':
         try:
             lab.utils.r('useradd -m cybertek -s /bin/bash -G sudo,wireshark -U')
         except:
-            lab.utils.r('useradd -m w4sp-lab -s /bin/bash -G sudo -U')  
+            lab.utils.r('useradd -m cybertek -s /bin/bash -G sudo -U')  
         print("[*] Please run: 'passwd cybertek' to set your password, then login as w4sp-lab and rerun lab")
         sys.exit(-1)
 
@@ -525,6 +319,8 @@ if __name__ == '__main__':
     p.start()
 
     time.sleep(3)
-    setup()
-    print('[*] Lab Launched, Starting Browser')
+
+    print('[*] Lab Launched, Start browser at http://127.0.0.1:5000')
     print('[*] Do not close this terminal. Closing Terminal will terminate lab.')
+  
+

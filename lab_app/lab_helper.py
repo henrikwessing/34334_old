@@ -291,6 +291,63 @@ def create_netx(net):
         sw = ''
         sw_clients = []
 
+def create_netr(net):
+    """connect routers and swicthes"""
+    print("Creating netx")
+
+    subnet = net['subnet']
+    image = '34334/labs:%s'
+    sw = ''
+    sw_clients = []
+
+    #lets create all containers
+
+    for node in net['nodes']:
+        for tag in node.keys():
+            print("Tag found: " + str(tag))
+		#if tag != 'clients':
+                #for name in hub[tag]:
+                #    d_image = image % tag
+                #    print(d_image)
+                #    sw = name
+                #    #if container doesn't already exist create it
+                #    if not c(name):
+                #        print(net)
+                #        ns_root.register_ns(name, d_image)
+            #else:
+             #   for clients in hub[tag]:
+             #       for tag in clients.keys():
+              #          for name in clients[tag]:
+              #              d_image = image % tag
+              #              print(d_image)
+                            #print c, tag
+               #             sw_clients.append(name)
+                #            if not c(name):
+                 #               ns_root.register_ns(name, d_image)
+
+        
+        #setup_sw(sw, subnet, sw_clients)
+        #for client in sw_clients:
+        #    c(sw).connect(c(client))
+
+        #we are now going to assign a random ip address to the br0 (dhcp server)
+        # base = '.'.join(subnet.split('.')[:-1])
+        #sw_ip = base + '.' + str(random.randrange(2,99)) + '/24'
+
+        #c(sw).enter_ns()
+        #################################
+
+        #getting random failures, adding sleep
+        #time.sleep(2)
+        #r('ip addr add $sw_ip dev br0')    
+    
+        #################################
+        #c(sw).exit_ns()
+       
+
+        #sw = ''
+        #sw_clients = []
+
 
 
 def create_net(net):

@@ -4,6 +4,7 @@ import socket
 import ctypes
 import fcntl
 import struct
+import time
 import os
 
 
@@ -113,7 +114,7 @@ def docker_clean():
     #docker rm -f $(docker ps -aq --filter 'label=34334=true')
     #r('service docker restart')
 
-    out = r('docker ps -aq --filter label=34334=true').split(b'\n')[:-1]
+    out = r('docker ps -aq').split(b'\n')[:-1]
     print ("Docker Cleanup")
     for c_id in out:
         r('docker rm -f $c_id')
@@ -148,7 +149,13 @@ def docker_clean():
 
     r('service NetworkManager start')
     r('service networking restart')
-    r('service docker restart')
+    r('service docker status')
+    try: 
+        r('systemctl restart docker')
+    except:
+        time.sleep(10)
+        r('systemctl restart docker')
+    print("Now docker should be restarted")
 
 
 

@@ -55,14 +55,39 @@
 
 
     <!-- Modal Start here-->
-<div class="modal fade bs-example-modal-lg" id="setupmodal" tabindex="-1"
+<div class="modal fade bs-example-modal-lg" id="setupfirewall" tabindex="-1"
     role="dialog" aria-hidden="true" data-backdrop="static">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title">
                     <span>
-                    </span>Etablerer lab-miljøet....
+                    </span>Etablerer firewall lab-miljøet....
+                 </h4>
+            </div>
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-info
+                    progress-bar-striped active"
+                    style="width: 100%">
+                    </div>
+                </div>
+             <p>Denne proces kan tage nogle minutter</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal ends Here -->
+
+    <!-- Modal Start here-->
+<div class="modal fade bs-example-modal-lg" id="setuprouting" tabindex="-1"
+    role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">
+                    <span>
+                    </span>Etablerer router lab-miljøet....
                  </h4>
             </div>
             <div class="modal-body">
@@ -83,15 +108,11 @@
     <div class="row">
 
     <div class="col-sm-4 col-md-4 col-lg-4">
-    <p>Benyt SETUP knappen til at igangsætte labben. Ligeledes kan nedluk benyttes til at stoppe labben</p>
+    <p>Benyt Setup Firewall og Setup Routing knapperne til at igangsætte lab-setups. Ligeledes kan nedluk benyttes til at stoppe labben</p>
     </div>
 
     <div class="col-sm-4 col-md-4 col-lg-4">
    <p>Netværksdiagrammet er dynamisk, men det er muligt at du skal trykke F5. Brows over nodes for at se adresser</p>
-    </div>
-
-    <div class="col-sm-4 col-md-4 col-lg-4">
-    <p>Knapperne til højre forventes ikke at fungere korrekt endnu. Laboratoriesetuppet er venligst lånt af W4SP</p>
     </div>
 
 
@@ -102,7 +123,11 @@
   <div class="row">
     <div class="col-sm-1 col-md-1 col-lg-1">
 
-       <button id="setup" type="submit" class="btn btn-danger">SETUP</button>
+       <button id="setupfirewall" type="submit" class="btn btn-danger">SETUP FIREWALL</button>
+
+       </br>
+
+       <button id="setuprouting" type="submit" class="btn btn-danger">SETUP ROUTING</button>
 
        </br>
 
@@ -115,24 +140,6 @@
     </div>
 
 
-    <div class="col-sm-1 col-md-1 col-lg-1">
-
-        <!-- removed wifi and elk buttons -->
-        {% for lab in ('vic2', 'mitm', 'ips', 'sploit') %}
-       <button id="{{ lab }}" type="submit" class="btn btn-danger">{{ 'start ' ~ lab }}</button>
-
-        {% endfor %}
-
-
-        <!--
-        <button id="mitm" type="submit" class="btn btn-danger">Setup MiTM</button>
-        <button id="ips" type="submit" class="btn btn-danger">Enable IPS</button>
-        <button id="jenkins" type="submit" class="btn btn-danger">Enable Jenkins</button>
-        <button id="elk" type="submit" class="btn btn-danger">Enable ELK</button>
-        <button id="wireless" type="submit" class="btn btn-danger">Enable Wireless</button>
-        -->
-
-    </div>
 
 
     </div>
@@ -208,7 +215,8 @@
         var is_mitm = false;
         var is_vic2 = false;
 
-        //make this based on a call to check if suricata is running
+        /*
+	//make this based on a call to check if suricata is running
         $.ajax({
             type: "GET",
             url: "is_ips",
@@ -222,9 +230,7 @@
                 is_ips = false;
             }
         });
-
-
-
+	*/
 
 
         var ids = nodes.getIds();
@@ -274,11 +280,11 @@
 
 
        $(function() {
-           $('button#setup').click(function(){
+           $('button#setupfirewall').click(function(){
 
-               $.get('setup', function(data) {
+               $.get('setupfirewall', function(data) {
 
-                   $('button#setup').text(data);
+                   $('button#setupfirewall').text(data);
 
                });
 
@@ -288,87 +294,20 @@
             });
         });
 
-
-
        $(function() {
-           $("button#mitm").click(function(){
-               $.ajax({
-                   type: "GET",
-                   url: "mitm",
+           $('button#setuprouting').click(function(){
+
+               $.get('setuprouting', function(data) {
+
+                   $('button#setuprouting').text(data);
+
                });
 
+               $('#setupmodal').modal('show');
                $.getJSON('getnet', redrawAll);
-
-               $('button#mitm').prop('disabled', true);
 
             });
         });
-
-
-       $(function() {
-           $("button#vic2").click(function(){
-               $.ajax({
-                   type: "GET",
-                   url: "add_vic2",
-               });
-
-               $.getJSON('getnet', redrawAll);
-
-               $('button#vic2').prop('disabled', true);
-
-            });
-        });
-
-
-
-
-       $(function() {
-           $("button#sploit").click(function(){
-               $.ajax({
-                   type: "GET",
-                   url: "sploit",
-               });
-
-               $.getJSON('getnet', redrawAll);
-
-               $('button#sploit').prop('disabled', true);
-
-            });
-        });
-
-
-
-
-       $(function() {
-           $("button#ips").click(function(){
-               $.ajax({
-                   type: "GET",
-                   url: "ips",
-               });
-
-               $.getJSON('getnet', redrawAll);
-
-               $('button#ips').prop('disabled', true);
-
-            });
-        });
-
-
-
-       $(function() {
-           $("button#wifi").click(function(){
-               $.ajax({
-                   type: "GET",
-                   url: "wifi",
-               });
-
-               $.getJSON('getnet', redrawAll);
-
-               $('button#wifi').prop('disabled', true);
-
-            });
-        });
-
 
 
 

@@ -16,9 +16,9 @@ RUN apt-get -y install nmap mtr traceroute python wget curl supervisor
 RUN apt-get -y install python-pip python-dev smbclient
 RUN apt-get -y install iptables 
 
-#set root creds to w4sp:w4spbook and create w4sp user with same password
-RUN usermod -p '$6$teB23uhk$u00/htDYpQKbBCVC2GsbcEi1m1BplEOnCs0LDE7cFM5lgq/VMSU27g7IFGRWp8k2qCd0jyiEFm5jx4.1LBrXZ.' root
-RUN useradd -d /home/w4sp -m -p '$6$teB23uhk$u00/htDYpQKbBCVC2GsbcEi1m1BplEOnCs0LDE7cFM5lgq/VMSU27g7IFGRWp8k2qCd0jyiEFm5jx4.1LBrXZ.' -s /bin/bash w4sp
+#set root creds to w4sp:w4spbook and create cybertek user with same password
+RUN usermod -p '$y$j9T$U8Hk9xud8LdTgUX68Z7lx.$kW2qyUmQDuzM9tIBISwbaIVFC9wSdh05ZuzsnSOm9E0' root
+RUN useradd -d /home/cybertek -m -p '$y$j9T$U8Hk9xud8LdTgUX68Z7lx.$kW2qyUmQDuzM9tIBISwbaIVFC9wSdh05ZuzsnSOm9E0' -s /bin/bash cybertek
 
 #fix unnecessary errors down the line
 RUN update-locale

@@ -3,7 +3,6 @@ FROM 34334/labs:base
 
 RUN pip install scapy pysmbclient
 RUN apt-get install -y winbind dhcping nginx
-RUN start service nginx
 
 #set dhclient.conf to be aggressive with dhcp requests
 RUN echo 'retry 10;' >> /etc/dhcp/dhclient.conf
