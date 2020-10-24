@@ -170,6 +170,7 @@ def setup_vrrp(routers):
 def setup_inet(inet, h_if, subnet):
     """this will pull the h_if interface into inet and will setup NAT
         then it will set the appropriate default gw for all of the other containers"""
+    print('--- BLIVER DETTE NOGENSINDE EKSEKVERET ---')
 
     #make sure we are in the root ns
     ns_root.enter_ns()
@@ -186,10 +187,10 @@ def setup_inet(inet, h_if, subnet):
     r('ip link set $h_if netns $name')
     
     #now delete all other interfaces
-    for nic in r('ifconfig -a').split('\n\n')[:-1]:
-        nic = nic.split(' ')[0]
-        if nic != 'lo':
-            r('ip link delete dev $nic')
+    #for nic in r('ifconfig -a').split('\n\n')[:-1]:
+    #    nic = nic.split(' ')[0]
+    #    if nic != 'lo':
+    #        r('ip link delete dev $nic')
 
 
     inet.enter_ns()
@@ -204,16 +205,16 @@ def setup_inet(inet, h_if, subnet):
     #delete the old default gw
     #r('ip route del 0/0')
    
-    r('ip route add $subnet via $old_gw')
+    #r('ip route add $subnet via $old_gw')
  
-    r('iptables -t nat -A POSTROUTING -o $h_if -j MASQUERADE')
-    r('iptables -A FORWARD -i $h_if -o $inet_nic -m state --state RELATED,ESTABLISHED -j ACCEPT')
-    r('iptables -A FORWARD -i $inet_nic -o $h_if -j ACCEPT')
+    #r('iptables -t nat -A POSTROUTING -o $h_if -j MASQUERADE')
+    #r('iptables -A FORWARD -i $h_if -o $inet_nic -m state --state RELATED,ESTABLISHED -j ACCEPT')
+    #r('iptables -A FORWARD -i $inet_nic -o $h_if -j ACCEPT')
 
     #########################################################################################
     inet.exit_ns()
 
-    r('docker exec -d $name dhclient $h_if')
+    #r('docker exec -d $name dhclient $h_if')
     
 
 
@@ -295,17 +296,18 @@ def create_netx(net):
 def connect_router(first, second, net):
     routerA = 'router'+str(first)
     routerB = 'router'+str(second)
-    interfaceA = routerA+'_'+str(second)
-    interfaceB = routerB+'_'+str(first)
+    interfaceA = routerA+'_'+str(second+10)
+    interfaceB = routerB+'_'+str(first+10)
     base = '.'.join(net.split('.')[:-1])
     ipA = base+'.'+'1/24'
     ipB = base+'.'+'2/24'
     c(routerA).connect(c(routerB))
     c(routerA).enter_ns()
-    print('Setting intefaces on ' + routerA)
+    print('Setting interfaces on ' + routerA)
     r('ip link add '+ interfaceA+' type veth peer name '+interfaceB)
     r('ip link set '+ interfaceB+' netns '+routerB)
     r('ip addr add '+ipA+' dev '+interfaceA)
+    r('ip link set '+interfaceA+' up')
     c(routerA).exit_ns()
     print('Setting intefaces on ' + routerB)
     c(routerB).enter_ns()

@@ -99,7 +99,7 @@ def docker_build(image_path):
 #    for image in next(os.walk( os.path.join(curdir,'.')))[1]:
 
         #no point in rebuilding the base image
-    for image in ('victims','vrrpd','inet','switch'):
+    for image in ('victims','vrrpd','router','inet','switch'):
         image_name = '34334/labs:' + image
         r('docker build -t $image_name $image')
 
@@ -115,6 +115,7 @@ def docker_clean():
       r('systemctl restart docker')
     except: 
       r('systemctl stop docker')
+      time.sleep(5)
       r('systemctl start docker')
 
     out = r('docker ps -aq').split(b'\n')[:-1]

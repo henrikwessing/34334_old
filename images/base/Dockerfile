@@ -18,7 +18,7 @@ RUN apt-get -y install iptables
 
 #set root creds to w4sp:w4spbook and create cybertek user with same password
 RUN usermod -p '$y$j9T$U8Hk9xud8LdTgUX68Z7lx.$kW2qyUmQDuzM9tIBISwbaIVFC9wSdh05ZuzsnSOm9E0' root
-RUN useradd -d /home/cybertek -m -p '$y$j9T$U8Hk9xud8LdTgUX68Z7lx.$kW2qyUmQDuzM9tIBISwbaIVFC9wSdh05ZuzsnSOm9E0' -s /bin/bash cybertek
+RUN useradd -d /home/cybertek -m -p "$(openssl passwd -1 34334)" -s /bin/bash cybertek -G sudo
 
 #fix unnecessary errors down the line
 RUN update-locale
