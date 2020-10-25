@@ -52,9 +52,12 @@ def setup_network_routing(h_if):
     connect_router(2,3,'192.168.230.0')
     connect_router(3,4,'192.168.220.0')
     connect_router(4,1,'192.168.210.0')
-    
+     
+  
 
-
+    # Start SSH service in each router
+    for i in range(4):
+      r('docker exec router%s service ssh start' % str(i+1))  
 
 
     #new_gw = setup_inet('inet', h_if, net_1['subnet'])
@@ -102,12 +105,16 @@ def setup_network_routing(h_if):
     r('ip link set $nic name 34334_lab')
     #p = Process(target=r, args=('dhclient -v w4sp_lab',))
     #p.start()
-    r('dhclient -v 34334_lab')
 
-    
+    r('ip netns exec router3 ip link set router3_0 up')
+    r('ip netns exec router1 ip link set router1_1 up')
+    #r('ip netns exec router3 ip addr add 192.168.250.1/24 dev router3_0')
+    #r('ip netns exec router1 ip addr add 192.168.250.2/24 dev router1_1')
 
-    r('ip netns exec router1 ip addr add 192.168.100.1/24 dev router1_0')
     r('ip netns exec router1 ip link set router1_0 up')
+    r('ip netns exec router1 ip addr add 192.168.100.1/24 dev router1_0')
+
+    r('dhclient -v 34334_lab')
     
     #c('inet').enter_ns()
     ###############################################

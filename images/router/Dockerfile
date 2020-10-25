@@ -9,6 +9,7 @@ ADD daemons /etc/quagga/daemons
 USER quagga
 ADD ospfd.conf /etc/quagga/ospfd.conf
 ADD zebra.conf /etc/quagga/zebra.conf
+ADD ripd.conf /etc/quagga/ripd.conf
 
 USER root
 ADD sshd_config /etc/ssh/sshd_config
@@ -17,5 +18,5 @@ ADD sshd_config /etc/ssh/sshd_config
 #ADD start_vrrpd.py /start_vrrpd.py
 #ADD supervisor_vrrpd.conf /etc/supervisor/conf.d/supervisor_vrrpd.conf
 RUN service ssh start
-RUN touch /home/cybertek .XAuthority
+RUN touch /home/cybertek/.XAuthority
 RUN rm -f /etc/supervisor/conf.d/supervisor_dhclient.conf

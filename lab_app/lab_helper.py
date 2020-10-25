@@ -306,12 +306,13 @@ def connect_router(first, second, net):
     print('Setting interfaces on ' + routerA)
     r('ip link add '+ interfaceA+' type veth peer name '+interfaceB)
     r('ip link set '+ interfaceB+' netns '+routerB)
-    r('ip addr add '+ipA+' dev '+interfaceA)
+    #r('ip addr add '+ipA+' dev '+interfaceA)
     r('ip link set '+interfaceA+' up')
     c(routerA).exit_ns()
     print('Setting intefaces on ' + routerB)
     c(routerB).enter_ns()
-    r('ip addr add '+ipB+' dev '+interfaceB)
+    #r('ip addr add '+ipB+' dev '+interfaceB)
+    r('ip link set '+interfaceB+' up')
     c(routerB).exit_ns()
 
 
@@ -322,7 +323,7 @@ def create_netr():
     image = '34334/labs:%s'
 
     #lets create all router containers
-    tag = 'vrrpd'
+    tag = 'router'
     d_image = image % tag
     for i in range(4):
       name = 'router' + str(i+1)

@@ -74,7 +74,7 @@ TCPKeepAlive yes
 #Banner /etc/issue.net
 
 AddressFamily inet
-# Allow client to pass locale environment variables
+#Allow client to pass locale environment variables
 AcceptEnv LANG LC_*
 
 Subsystem sftp /usr/lib/openssh/sftp-server
