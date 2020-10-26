@@ -299,20 +299,23 @@ def connect_router(first, second, net):
     interfaceA = routerA+'_'+str(second+10)
     interfaceB = routerB+'_'+str(first+10)
     base = '.'.join(net.split('.')[:-1])
+    interface = 'r_'+net
     ipA = base+'.'+'1/24'
     ipB = base+'.'+'2/24'
-    c(routerA).connect(c(routerB))
+    nic = c(routerB).connect(c(routerA))
     c(routerA).enter_ns()
     print('Setting interfaces on ' + routerA)
-    r('ip link add '+ interfaceA+' type veth peer name '+interfaceB)
-    r('ip link set '+ interfaceB+' netns '+routerB)
+    ###r('ip link set $nic name $interface')
+#   r('ip link add '+ interfaceA+' type veth peer name '+interfaceB)
+    ###r('ip link set '+ interface+' netns '+routerB)
     #r('ip addr add '+ipA+' dev '+interfaceA)
-    r('ip link set '+interfaceA+' up')
+    ###r('ip link set '+interface+' up')
     c(routerA).exit_ns()
     print('Setting intefaces on ' + routerB)
     c(routerB).enter_ns()
+    ###r('ip link set $nic name $interface')
     #r('ip addr add '+ipB+' dev '+interfaceB)
-    r('ip link set '+interfaceB+' up')
+    ###r('ip link set '+interface+' up')
     c(routerB).exit_ns()
 
 

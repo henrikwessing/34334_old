@@ -18,18 +18,18 @@ def setup_network_routing(h_if):
     finally:
         docker_clean()
 
-    net_1 = {'subnet' : '192.168.100.0/24',
+    net_1 = {'subnet' : '192.168.1.0/24',
                 'hubs' : [
 		    {'switch' : ['sw1'],
 			'clients' : [ {'router' : ['router1']}  ]
                  }]                   
             }
 
-    net_2 = {'subnet' : '192.168.250.0/24',
+    net_2 = {'subnet' : '10.1.4.0/24',
                 'hubs' : [
                     {'switch' : ['sw2'],
                         'clients' : [
-                            {'router' : ['router1']}, {'router' : ['router3']}
+                            {'router' : ['router1']}, {'router' : ['router4']}
                         ]
                     }
                 ]
@@ -39,22 +39,45 @@ def setup_network_routing(h_if):
     create_netx(net_1)
     create_netx(net_2) 
     
+    ###r('ip netns exec router1 ip link set router1_1 name router1_14')
+    ###r('ip netns exec router1 ip link set router1_14 up')
+
+    ###r('ip netns exec router4 ip link set router4_0 name router4_11')
+    ###r('ip netns exec router4 ip link set router4_11 up')
+
+
+
     image = '34334/labs:router'
     name = 'router2'
     if not c(name):
       ns_root.register_ns(name, image)
 
-    name = 'router4'
+    name = 'router3'
     if not c(name):
       ns_root.register_ns(name, image)
 
-    connect_router(1,2,'192.168.240.0')
-    connect_router(2,3,'192.168.230.0')
-    connect_router(3,4,'192.168.220.0')
-    connect_router(4,1,'192.168.210.0')
-     
-  
 
+    connect_router(1,2,'1_2')
+    connect_router(2,4,'2_4')
+    connect_router(4,3,'3_4')
+    connect_router(3,1,'1_3')
+     
+
+    # Creating hosts as base images and connect
+    image = '34334/labs:base'
+    for i in range(4):
+      k = str(i+1)
+      name = 'host' + k
+      if not c(name):
+        ns_root.register_ns(name, image)
+        rname = 'router%s' % k
+        c(name).connect(c(rname))
+        #r('ip netns exec '+name+' ip link add host'+k+'_1 type veth peer name router'+k+'_1')
+        #r('ip netns exec '+name+' ip link set router'+k+'_1 netns router'+k)
+        #r('ip netns exec '+name+' ip link set host'+k+'_1 up')
+        #r('ip netns exec '+name+' ip addr add 192.168.'+k+'.1'+k+'/24 dev host'+k+'_1')
+        #r('ip netns exec '+rname+' ip link set router'+k+'_1 up')
+ 
     # Start SSH service in each router
     for i in range(4):
       r('docker exec router%s service ssh start' % str(i+1))  
@@ -106,13 +129,13 @@ def setup_network_routing(h_if):
     #p = Process(target=r, args=('dhclient -v w4sp_lab',))
     #p.start()
 
-    r('ip netns exec router3 ip link set router3_0 up')
-    r('ip netns exec router1 ip link set router1_1 up')
+    ###r('ip netns exec router3 ip link set router3_0 up')
+    ###r('ip netns exec router1 ip link set router1_1 up')
     #r('ip netns exec router3 ip addr add 192.168.250.1/24 dev router3_0')
     #r('ip netns exec router1 ip addr add 192.168.250.2/24 dev router1_1')
 
-    r('ip netns exec router1 ip link set router1_0 up')
-    r('ip netns exec router1 ip addr add 192.168.100.1/24 dev router1_0')
+    ###r('ip netns exec router1 ip link set router1_0 up')
+    #r('ip netns exec router1 ip addr add 192.168.100.1/24 dev router1_0')
 
     r('dhclient -v 34334_lab')
     
