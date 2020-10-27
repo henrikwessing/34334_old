@@ -273,7 +273,11 @@ def create_netx(net):
         #setup_sw(sw, subnet, sw_clients)
         for client in sw_clients:
             print('--- Connecting clients ---' + sw + '   ' + client) 
-            c(sw).connect(c(client))
+            nic = c(sw).connect(c(client))
+            if sw=='sw2':
+               r('ip netns exec '+client+' ip link set '+nic+' name r_1_4') 
+
+            
 
         #we are now going to assign a random ip address to the br0 (dhcp server)
         base = '.'.join(subnet.split('.')[:-1])
@@ -303,6 +307,13 @@ def connect_router(first, second, net):
     ipA = base+'.'+'1/24'
     ipB = base+'.'+'2/24'
     nic = c(routerB).connect(c(routerA))
+    r('ip netns exec '+routerA+' ip link set '+nic+' name '+interface) 
+    r('ip netns exec '+routerB+' ip link set '+nic+' name '+interface) 
+    r('ip netns exec %s ip link set %s up' % (routerA, interface))
+    r('ip netns exec %s ip link set %s up' % (routerB, interface))
+
+
+
     c(routerA).enter_ns()
     print('Setting interfaces on ' + routerA)
     ###r('ip link set $nic name $interface')

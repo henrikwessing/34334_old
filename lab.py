@@ -18,7 +18,7 @@ def setup_network_routing(h_if):
     finally:
         docker_clean()
 
-    net_1 = {'subnet' : '192.168.1.0/24',
+    net_1 = {'subnet' : '192.168.100.0/24',
                 'hubs' : [
 		    {'switch' : ['sw1'],
 			'clients' : [ {'router' : ['router1']}  ]
@@ -71,16 +71,24 @@ def setup_network_routing(h_if):
       if not c(name):
         ns_root.register_ns(name, image)
         rname = 'router%s' % k
-        c(name).connect(c(rname))
-        #r('ip netns exec '+name+' ip link add host'+k+'_1 type veth peer name router'+k+'_1')
-        #r('ip netns exec '+name+' ip link set router'+k+'_1 netns router'+k)
-        #r('ip netns exec '+name+' ip link set host'+k+'_1 up')
-        #r('ip netns exec '+name+' ip addr add 192.168.'+k+'.1'+k+'/24 dev host'+k+'_1')
-        #r('ip netns exec '+rname+' ip link set router'+k+'_1 up')
+        nic = c(name).connect(c(rname))
+        r('ip netns exec '+name+' ip link set '+nic+' name h_'+k) 
+        r('ip netns exec '+rname+' ip link set '+nic+' name h_'+k) 
+        r('ip netns exec '+name+' ip addr add 192.168.'+k+'.1'+k+'/24 dev h_'+k)
+        r('ip netns exec '+name+' ip link set h_'+k+' up')
+        r('ip netns exec '+rname+' ip link set h_'+k+' up')
+
  
     # Start SSH service in each router
     for i in range(4):
-      r('docker exec router%s service ssh start' % str(i+1))  
+      r('docker exec router%s service ssh start' % str(i+1)) 
+
+    # Select config file and start service in router 1 and 2
+    for i in range(2):
+      k=str(i+1)
+      r('docker exec -ti router%s sudo mv /etc/quagga/ripd%s.conf /etc/quagga/ripd.conf' % (k,k))
+      r('docker exec -ti router%s sudo mv /etc/quagga/zebra%s.conf /etc/quagga/zebra.conf' % (k,k))
+      r('docker exec -ti router%s sudo service quagga start' % k)
 
 
     #new_gw = setup_inet('inet', h_if, net_1['subnet'])
@@ -136,6 +144,8 @@ def setup_network_routing(h_if):
 
     ###r('ip netns exec router1 ip link set router1_0 up')
     #r('ip netns exec router1 ip addr add 192.168.100.1/24 dev router1_0')
+
+    r('ip netns exec router1 dhclient -v router1_0')
 
     r('dhclient -v 34334_lab')
     
