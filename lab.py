@@ -61,7 +61,15 @@ def setup_network_routing(h_if):
     connect_router(2,4,'2_4')
     connect_router(4,3,'3_4')
     connect_router(3,1,'1_3')
-     
+  
+  # Select config file and start service in router 1 and 2
+    for i in range(2):
+      k=str(i+1)
+      r('docker exec -ti router%s sudo mv /etc/quagga/ripd%s.conf /etc/quagga/ripd.conf' % (k,k))
+      r('docker exec -ti router%s sudo mv /etc/quagga/zebra%s.conf /etc/quagga/zebra.conf' % (k,k))
+      r('docker exec -ti router%s sudo service quagga start' % k)
+
+   
 
     # Creating hosts as base images and connect
     image = '34334/labs:base'
@@ -77,19 +85,14 @@ def setup_network_routing(h_if):
         r('ip netns exec '+name+' ip addr add 192.168.'+k+'.1'+k+'/24 dev h_'+k)
         r('ip netns exec '+name+' ip link set h_'+k+' up')
         r('ip netns exec '+rname+' ip link set h_'+k+' up')
+        r('ip netns exec %s route add default gw 192.168.%s.1' % (name,k))
 
  
     # Start SSH service in each router
     for i in range(4):
       r('docker exec router%s service ssh start' % str(i+1)) 
 
-    # Select config file and start service in router 1 and 2
-    for i in range(2):
-      k=str(i+1)
-      r('docker exec -ti router%s sudo mv /etc/quagga/ripd%s.conf /etc/quagga/ripd.conf' % (k,k))
-      r('docker exec -ti router%s sudo mv /etc/quagga/zebra%s.conf /etc/quagga/zebra.conf' % (k,k))
-      r('docker exec -ti router%s sudo service quagga start' % k)
-
+  
 
     #new_gw = setup_inet('inet', h_if, net_1['subnet'])
 

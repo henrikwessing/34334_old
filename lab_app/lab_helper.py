@@ -18,7 +18,7 @@ def runshark(name):
         return 
 
     # Modified - start a bash in given namespace
-    bash = 'ip netns exec %s /bin/bash' %name
+    bash = 'docker exec -ti %s /bin/bash' %name
     print("--EXEC COMMAND--" + bash)
     p = Process(target=r, args=(bash,))
     p.start()
