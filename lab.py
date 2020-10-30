@@ -85,7 +85,7 @@ def setup_network_routing(h_if):
         r('ip netns exec '+name+' ip addr add 192.168.'+k+'.1'+k+'/24 dev h_'+k)
         r('ip netns exec '+name+' ip link set h_'+k+' up')
         r('ip netns exec '+rname+' ip link set h_'+k+' up')
-        r('ip netns exec %s route add default gw 192.168.%s.1' % (name,k))
+        r('ip netns exec %s route add default gw 192.168.%s.%s' % (name,k,k))
 
  
     # Start SSH service in each router
